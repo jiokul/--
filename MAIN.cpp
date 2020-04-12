@@ -1,161 +1,102 @@
-#include <iostream>
+include <iostream>
 #include <stdio.h>
-#include <queue>
 #include <string.h>
 using namespace std;
-typedef struct biao//表节点
-{
-    int adjvex;//该弧所指向的定点的位置
-    biao *next;
-}biao;
-
-typedef struct tou//头结点
-{
-    char data[20];//编号
-    biao *firstdian;//第一个表结点的地址，指向第一条依附该顶点的弧的指针
-}to,ad[20];
-
 typedef struct shuju
 {
-    ad ver;
-    int nd,nb;
+    char dingdian[20][20];//定点存储
+    char mingcheng[20][20];//定点名称
+    int bian[20][20];//边矩阵
+    int nb;//边数目
+    int nd;//顶点数目
+    int flag;//是否存在环的判断值
 }shuju;
 
-int chazhao(shuju g,char u[])//返回顶点u在图中的位置
-{
-    int i;
-    for(i=0;i<20;i++)
-    {
-        if(strcmp(g.ver[i].data,u)==0)
-        {
-            return i;
-        }
-    }
-    return -1;
-}
+int jilu[20];
 
-void creat(shuju &g,char a[][20],int dian,int bian)//构造有向图
+void creat(shuju &g)//构造有向图
 {
-    g.nb=bian;
-    g.nd=dian;
+    g.flag=0;
+    cout<<"请输入定点数目和边数目(示例6 8(6为定点数，8为边数目))"<<endl;
+    cin>>g.nd>>g.nb;
+    cout<<"请输入定点编号和名称(示例：A 数据结构)"<<endl;
     int i,j,k;
-    char v1[20],v2[20];
     for(i=0;i<g.nd;i++)
     {
-        strcpy(g.ver[i].data,a[i]);
-        g.ver[i].firstdian=NULL;
+        scanf("%s",g.dingdian[i]);
+        scanf("%s",g.mingcheng[i]);
+    }
+    for(i=0;i<g.nd;i++)
+    {
+        for(j=0;j<g.nd;j++)
+        {
+            g.bian[i][j]=0;
+        }
     }
     cout<<"请输入边(示例：A B,表示A指向B)"<<endl;
-    for(i=0;i<g.nb;i++)
+    char v1[20],v2[20];
+    for(k=0;k<g.nb;k++)
     {
         cin>>v1>>v2;
-        k=chazhao(g,v1);
-        j=chazhao(g,v2);
-        biao *p=new biao;
-        p->adjvex=j;
-        p->next=g.ver[k].firstdian;
-        g.ver[k].firstdian=p;
-    }
-
-}
-
-void rudu(shuju g,int ru[])//各定点的入度计算
-{
-    int i;
-    for(i=0;i<g.nd;i++)
-    {
-        ru[i]=0;
-    }
-    for(i=0;i<g.nd;i++)
-    {
-        biao *p=g.ver[i].firstdian;
-        while(p)
+        for(i=0;i<g.nd;i++)
         {
-            ru[p->adjvex]++;
-            p=p->next;
+            if(strcmp(v1,g.dingdian[i])==0)
+                break;
         }
+        for(j=0;j<g.nd;j++)
+        {
+            if(strcmp(v2,g.dingdian[j])==0)
+                break;
+        }
+        g.bian[i][j]=1;
     }
 }
 
-int tupu(shuju g,int b[])//拓扑排序，判断是否存在回路
+void DFS(int i,shuju &s)//深度遍历，判断是否存在环
 {
-    queue<int>qu;
-    int ru[g.nd]={0};//入度数组
-    int i;
-    int count=0;//计入队次数
-
-    rudu(g,ru);
-
-    for(i=0;i<g.nd;i++)//入度为0的点入队
+    jilu[i]=1;
+    int j;
+    for(j=0;j<s.nd;j++)
     {
-        if(ru[i]==0)
+        if(s.bian[i][j]!=0)//如果当前结点有指向的结点
         {
-            qu.push(i);
+            if(jilu[j]==1)//并且已经被访问过
+            {
+                s.flag=1;//有环
+                break;
+            }
+            else
+            {
+                if(jilu[j]==-1)//当前结点后边的结点都被访问过，直接跳至下一个结点
+                    continue;
+                else
+                    DFS(j,s);//否则递归访问
+            }
+
         }
     }
-    while(!qu.empty())
-    {
-        int v=qu.front();
-        b[v]=1;
-        qu.pop();
-        count++;
-        cout<<g.ver[v].data<<" ";
-        biao *p=g.ver[v].firstdian;
-        while(p)//改顶点出队后，所有以该边为入的顶点入度减一
-        {
-            if((--ru[p->adjvex])==0)
-                qu.push(p->adjvex);//顶点入度减一后为0，进入队列
-            p=p->next;
-        }
-    }
-    //判断不同情况，根据返回值判断是否存在回路
-    if(count<g.nd)
-        return 1;
-    if(count==g.nd)
-        return 0;
-    if(count>g.nd)
-        return -1;
+    jilu[i]=-1;
 }
 int main()
 {
-    int dian,bian;
-    char a;
-    char d[20][20];
-    char m[20][20];
-    int jilu[20]={0};
-    int i,j;
-    cout<<"请输入定点数目和边数目"<<endl;
-    cin>>dian>>bian;
-    cout<<"请输入定点编号和名称(示例：A 数据结构)"<<endl;
-    for(i=0;i<dian;i++)
+    shuju s;
+    creat(s);
+    int i;
+    for(i=0;i<s.nd;i++)
     {
-        scanf("%S",d[i]);
-        scanf("%s",m[i]);
+        if(jilu[i]==-1)
+            continue;
+        DFS(i,s);
+        if(s.flag==1)
+        {
+            cout<<"有回路,出现错误"<<endl;
+            break;
+        }
     }
-    shuju g;
-    creat(g,d,dian,bian);
-    cout<<"拓扑排序为:";
-    j=tupu(g,jilu);
-    cout<<endl;
-    if(j==0)
+    if(s.flag==0)
     {
         cout<<"无回路,课表通过"<<endl;
     }
-    if(j==1)
-    {
-        cout<<"有回路,出现错误的部分是:"<<endl;
-        for(i=0;i<g.nd;i++)
-        {
-            if(jilu[i]==0)
-            {
-                printf("%s %s\n",d[i],m[i]);
-            }
-        }
-    }
-    if(j==-1)
-    {
-        cout<<"程序运行出现错误,请调试";
-    }
-
     return 0;
 }
+
